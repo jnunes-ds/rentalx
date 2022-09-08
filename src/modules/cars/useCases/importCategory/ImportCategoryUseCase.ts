@@ -7,7 +7,6 @@ class ImportCategoryUseCase {
   execute(file: MulterFile): void {
     const stream = fs.createReadStream(file.path);
 
-    // @ts-ignore
     const parseFile = csvParse();
 
     stream.pipe(parseFile);
