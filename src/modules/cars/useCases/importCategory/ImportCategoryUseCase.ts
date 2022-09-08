@@ -1,19 +1,44 @@
 import fs from "fs";
 import { parse as csvParse } from "csv-parse";
+import { ICategoriesRepository } from "../../repositories/ICategoriesRepositoy";
 
 interface MulterFile extends Express.Multer.File {}
 
+interface IImportCategory {
+  name: string;
+  description: string;
+}
+
 class ImportCategoryUseCase {
-  execute(file: MulterFile): void {
-    const stream = fs.createReadStream(file.path);
+  constructor(private categorieRepository: ICategoriesRepository) {}
 
-    const parseFile = csvParse();
+  loadloadCategories(file: MulterFile): Promise<IImportCategory[]> {
+    return new Promise((resolve, reject) => {
+      const stream = fs.createReadStream(file.path);
+      const categories: IImportCategory[] = [];
 
-    stream.pipe(parseFile);
+      const parseFile = csvParse();
 
-    parseFile.on("data", async (line) => {
-      console.log(line);
+      stream.pipe(parseFile);
+
+      parseFile
+        .on("data", async (line) => {
+          const [name, description] = line;
+          categories.push({ name, description });
+        })
+        .on("end", () => {
+          resolve(categories);
+        })
+        .on("error", (err) => {
+          reject(err);
+        });
+      return categories;
     });
+  }
+
+  async execute(file: MulterFile): Promise<void> {
+    const categories = await this.loadloadCategories(file);
+    console.log(categories);
   }
 }
 
